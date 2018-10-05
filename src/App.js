@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { Router, Route } from 'react-router'
+import { Router, Route, browserHistory } from 'react-router'
 import Login from './components/Login'
 import Account from './components/Account'
 
@@ -13,7 +13,7 @@ class App extends Component {
           <h1 className="App-title">Bambank</h1>
         </header>
 
-        <Router>
+        <Router history={browserHistory}>
           <Route path="/" component={Login} />
           <Route path="/account" component={Account} />
         </Router>

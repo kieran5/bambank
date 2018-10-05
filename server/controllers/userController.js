@@ -8,7 +8,9 @@ export const User = mongoose.model('User', UserSchema);
 export const createUser = (req, res) => {
   // Check password field matches the password confirmed field
   // Show error message if they do not match
-  if(req.body.password === req.body.passwordConf) {
+  //if(req.body.password === req.body.passwordConf) {
+  if(true) {
+    console.log("req", req.body)
     // Pass username and password fields text in to a new User object
     // We leave the passwordConf out of this object as we only want to hash
     // and save the password once to the DB
@@ -43,9 +45,14 @@ export const createUser = (req, res) => {
       if (err) {
         res.send(err);
       } else {
-        //res.json(user);
-        //res.json("Registration successful!");
-        res.redirect('/');
+
+        res.json({
+          userId: user._id,
+          username: user.username,
+          balance: user.balance,
+          message: "Registration successful!"
+        });
+
       }
     });
   } else {
@@ -59,7 +66,7 @@ export const checkUser = (req, res) => {
   // Get hashed password for user from database
   // Find user by the username entered in to the text field by the user
   // Ask for the password field from the database and execute callback function
-  User.findOne({ 'username': req.body.username }, 'password', (err, user) => {
+  User.findOne({ 'username': req.body.username }, (err, user) => {
     if (err) {
       res.send(err);
     } else if(!user) {
@@ -73,13 +80,14 @@ export const checkUser = (req, res) => {
         if(match) {
           // Passwords match
           // Return user to homepage with success message
-          //res.json("Logged in successfully!");
-          res.redirect('/');
+          res.json({
+            userId: user._id,
+            username: user.username,
+            balance: user.balance,
+            message: "Logged in successfully!"
+          });
+          //res.redirect('/');
 
-          // Place user id in to session variable
-          req.session.userID = user._id;
-
-          return req.session.save();
 
         } else {
           // Password do not match
@@ -90,49 +98,83 @@ export const checkUser = (req, res) => {
     }
   });
 };
-
-// Function to log out and destroy the current user session
-export const logoutUser = (req, res) => {
-  // If a user session exists
-  if(req.session.userID) {
-    console.log("Session exists.");
-
-    // Delete session object
-    req.session.destroy(function(err) {
-      if(err) {
-        console.log(err);
-        return res.json(err);
-      } else {
-
-        console.log("Session destroyed.");
-        return res.redirect('/');
-      }
-    });
-
-  } else {
-    return res.json("Session does not exist...");
-  }
-};
+//
+// // Function to log out and destroy the current user session
+// export const logoutUser = (req, res) => {
+//   // If a user session exists
+//   var user = localStorage.getItem('userId')
+//
+//   if(user) {
+//     console.log("User exists.");
+//
+//     localStorage.removeItem('userId')
+//
+//   } else {
+//     return res.json("User does not exist...");
+//   }
+// };
 
 // Return current logged in user from session so front end knows which buttons to display etc.
 export const getCurrentUser = (req, res) => {
+  console.log("my username", req.body.username)
 
-  if(req.session.userID) {
+  User.findOne({ 'username': req.body.username}, (err, user) => {
+    if (err) res.send(err);
 
-    User.findById(req.session.userID, (err, user) => {
-      if (err) res.send(err);
+    res.json(user);
+  });
 
-      res.json(user);
-    });
-  }
 };
 
 // Get all users function so that we can display a full list of users to admins
 // so they can edit or delete user accounts
 export const getAllUsers = (req, res) => {
-  User.find({ }, (err, user) => {
+  User.find({ }, 'username', (err, user) => {
     if (err) res.send(err);
 
     res.json(user);
   });
 };
+
+
+export const transferToUser = (req, res) => {
+  // var userSending = req.userSending;
+  // var userReceiving = req.userReceiving;
+  // var amount = req.amount;
+
+  User.findOne({ 'username': req.body.userReceiving }, (err, userReceiving) => {
+    if(!userReceiving) {
+      res.json({
+        message: "User does not exist!"
+      })
+    }
+    else {
+      User.findOne({ 'username': req.body.userSending }, (err, userSending) => {
+        if(userSending.balance < req.body.amount) {
+          res.json({
+            message: "Not enough funds!"
+          })
+        }
+        else {
+          User.findOneAndUpdate({ 'username': req.body.userSending}, { $inc: {balance: -req.body.amount} }, { new: true }, (err) => {
+            if (err) {
+              res.send(err)
+            }
+            else {
+              User.findOneAndUpdate({ 'username': req.body.userReceiving}, { $inc: {balance: req.body.amount} }, { new: true }, (err) => {
+                if (err) {
+                  res.send(err)
+                }
+                else {
+                  res.json({
+                    message: "Transfer successful!"
+                  })
+                }
+              })
+            }
+          })
+        }
+      })
+    }
+  })
+}

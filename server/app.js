@@ -3,6 +3,7 @@ import routes from './routes/';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose'
 import session from 'express-session';
+import cors from 'cors'
 
 const app = express()
 const router = express.Router()
@@ -23,6 +24,8 @@ var db = mongoose.connection;
 // Makes data available in req.body
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+app.use(cors())
 
 // Setup sessions to be used for login
 // Needs to be setup after body parsed as we need the parsed values to place them in to a session
